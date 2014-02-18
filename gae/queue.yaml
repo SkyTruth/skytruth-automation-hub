@@ -1,0 +1,12 @@
+# Set the total storage limit for all queues 
+total_storage_limit: 500M
+
+queue:
+- name: tasks
+  mode: pull
+#  retry_parameters:
+#    task_retry_limit: 3
+    
+#TODO: Remove retry_limit.  Implement retry limit manually in lease() so we can log it
+
+    
