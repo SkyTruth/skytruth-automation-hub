@@ -1,0 +1,82 @@
+TaskQueue API Authentication
+============================
+
+TasksQueue requires authentication using OAuth2 with a Google Service Account
+
+*Create a new Service Account credential*
+
+To create a set of credientials, you need to create a new service account in the Google Developer's Console.
+
+Start here:
+
+    https://cloud.google.com/console/project
+    
+Then select a project and go to 
+
+    Apis & Auth / Credentials / Create New Client ID 
+    
+Select "Service Account" and create the Client ID.  Download the .p12 file when prompted and then click "Downlaod Json" to get the rest of the credentials you ened.
+
+*Convert p12 to PEM*
+
+Unfortunately, the pycrypto library does not support the p12 key format, so we have to convert it to a PEM before we can use it to authenticate.
+See https://gist.github.com/vircheck/6292176
+
+To do this:
+
+    $ openssl pkcs12 -passin pass:notasecret -in privatekey.p12 -nocerts -passout pass:notasecret -out key.pem
+
+    $ openssl pkcs8 -nocrypt -in key.pem -passin pass:notasecret -topk8 -out privatekey.pem
+
+    $ rm key.pem
+
+*Sample Code*
+
+    import apiclient.discovery
+    import httplib2
+    from apiclient.discovery import build
+    from oauth2client.client import SignedJwtAssertionCredentials
+
+    f = file('privatekey.pem', 'rb')
+    key = f.read()
+    f.close()
+    
+    #NB: use the account email address here, not the client id
+    credentials = SignedJwtAssertionCredentials(
+        '...@developer.gserviceaccount.com',
+        key,
+        scope='https://www.googleapis.com/auth/userinfo.email')
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+    # Construct a service object via the discovery service.
+    service = apiclient.discovery.build("test", "v1.0", http=http,
+            discoveryServiceUrl=('http://localhost:8080' + 
+                "/_ah/api/discovery/v1/apis/{api}/{apiVersion}/rest"))
+    response = service.test(body=dict(message='This is a test')).execute()
+    print response
+    
+If the authentication succeeds, you should get something like:
+
+    {u'status': u'OK',
+    u'message': u'This is a test', 
+    u'info': u'USER: ...@developer.gserviceaccount.com', 
+    u'kind': u'taskqueue#resourcesItem', u'etag': 
+    u'"ltDuolCsrKTwvIUjLfDs85_BEjY/MJrplEP3y6HiwVLXwkt1wrY5UXQ"'}    
+
+If the authentication fails, you should see:
+
+    {u'status': u'Invalid oauth client id', 
+    u'info': u'USER: None', 
+    u'message': u'This is a test', 
+    u'etag': u'"Ysme9Ie64gJwvNOij-e51nTue8I/0tYbiMFqdXR8uwKke-sv05B3LtM"',
+    u'kind': u'taskqueue#resourcesItem'}
+
+*Adding Auth Keys*
+
+The list of keys that are authenticated is hard coded, so you have to edit the allowed_client_ids property of the api declaration in taskqueue_api.py
+
+    @endpoints.api(name='taskqueue', version='v1', allowed_client_ids=['314157906781-5k944tnd2e4hvcf0nrc4dl93kgdaqnam.apps.googleusercontent.com'])
+
+Note that in allowed_client_ids you use the CLIENT ID, but when authenticating from the client side, you use the associated EMAIL ADDRESS
+
+
