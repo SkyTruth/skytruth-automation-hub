@@ -8,6 +8,15 @@ A simple set of google app engine services to support distributed automation.  I
 
 **[RoadMap] (./roadmap.md)**
 
+MAVERICKS
+=========
+
+The compiler in Mavericks has deprecated specific flags, which can have problems compiling Python modules with C extension, so do the following before moving to the INSTALL section
+    export CFLAGS=-Qunused-arguments
+    export CPPFLAGS=-Qunused-arguments
+
+Remember to `sudo -E` to load environment variables if doing `sudo pip install`
+
 INSTALL
 =======
 
