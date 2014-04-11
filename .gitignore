@@ -35,4 +35,11 @@ nosetests.xml
 .project
 .pydevproject
 
+# JetBrains PyCharm IDE directory
+.idea
+
+# Virtual environment
+env
+
+# Mac specific files
 .DS_Store
